@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas Schedule Extension</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<style>
+  :root {
+    --green: #7A8C4E;
+    --green-light: #A8BA72;
+    --green-dark: #556338;
+    --green-bg: #F2F5E8;
+    --cream: #FAF8F0;
+    --sidebar: #2C2E1E;
+    --sidebar-hover: #3D4028;
+    --accent: #C9B96C;
+    --text: #2C2E1E;
+    --text-muted: #7A7D65;
+    --border: #DDE5C0;
+    --white: #FFFFFF;
+    --red: #C0664A;
+    --orange: #C8874A;
+    --blue: #5A7A9E;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(44,46,30,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+  /* ── ONBOARDING ── */
+  #onboarding { position: fixed; inset: 0; background: var(--green-bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .ob-card { background: var(--white); border-radius: 20px; box-shadow: var(--shadow); padding: 48px 52px; max-width: 560px; width: 90%; }
+  .ob-logo { width: 56px; height: 56px; background: var(--green); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+  .ob-logo svg { width: 30px; height: 30px; fill: none; stroke: white; stroke-width: 2; }
+  .ob-title { font-size: 26px; font-weight: 700; text-align: center; color: var(--text); margin-bottom: 8px; }
+  .ob-sub { font-size: 14px; color: var(--text-muted); text-align: center; margin-bottom: 32px; line-height: 1.5; }
+  .ob-features { list-style: none; margin-bottom: 32px; }
+  .ob-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); padding: 6px 0; }
+  .ob-features li::before { content: ''; width: 18px; height: 18px; background: var(--green); border-radius: 50%; flex-shrink: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4 9l3.5 3.5L14 6' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-size: cover; }
+  .btn-primary { width: 100%; padding: 14px; background: var(--green); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s; }
+  .btn-primary:hover { background: var(--green-dark); }
+  .btn-secondary { background: none; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; padding: 8px; width: 100%; }
+  .btn-secondary:hover { color: var(--text); }
+  .ob-dots { display: flex; justify-content: center; gap: 6px; margin-top: 24px; }
+  .ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
+  .ob-dot.active { background: var(--green); width: 20px; border-radius: 4px; }
+  .ob-nav { display: flex; gap: 12px; margin-top: 24px; align-items: center; }
+  .btn-back { padding: 12px 20px; background: none; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text-muted); flex-shrink: 0; }
+  .btn-back:hover { border-color: var(--green); color: var(--green); }
+  .ob-section { margin-bottom: 24px; }
+  .ob-section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap-8px; }
+  .ob-section-icon { width: 28px; height: 28px; background: var(--green-bg); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 8px; font-size: 14px; }
+  .ob-option { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 2px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+  .ob-option:hover { border-color: var(--green-light); background: var(--green-bg); }
+  .ob-option.selected { border-color: var(--green); background: var(--green-bg); }
+  .ob-option-radio { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; margin-top: 1px; transition: all 0.15s; position: relative; }
+  .ob-option.selected .ob-option-radio { border-color: var(--green); background: var(--green); }
+  .ob-option.selected .ob-option-radio::after { content: ''; position: absolute; inset: 3px; background: white; border-radius: 50%; }
+  .ob-option-text strong { display: block; font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .ob-option-text span { font-size: 12px; color: var(--text-muted); }
+  .ob-time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ob-time-opt { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.15s; font-size: 14px; }
+  .ob-time-opt:hover { border-color: var(--green-light); background: var(--green-bg); }
+  .ob-time-opt.selected { border-color: var(--green); background: var(--green-bg); font-weight: 600; }
+  .ob-time-opt input { accent-color: var(--green); }
+  .drs-option { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: none; background: none; cursor: pointer; font-size: 14px; width: 100%; text-align: left; }
+  .drs-option input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--green); }
+  .drs-days { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 10px; }
+  .drs-day { padding: 8px; border: 2px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s; }
+  .drs-day.selected { border-color: var(--green); background: var(--green); color: white; }
+  .ob-h { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .ob-p { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
+
+  /* ── APP SHELL ── */
+  #app { display: none; height: 100vh; }
+  .app-layout { display: flex; height: 100vh; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: 64px; background: var(--sidebar); display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 4px; flex-shrink: 0; }
+  .sb-logo { width: 36px; height: 36px; background: var(--green); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; cursor: pointer; }
+  .sb-logo svg { width: 20px; height: 20px; fill: none; stroke: white; stroke-width: 2; }
+  .sb-btn { width: 40px; height: 40px; border: none; background: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #8A9070; transition: all 0.15s; position: relative; }
+  .sb-btn:hover, .sb-btn.active { background: var(--sidebar-hover); color: var(--green-light); }
+  .sb-btn svg { width: 20px; height: 20px; }
+  .sb-spacer { flex: 1; }
+  .sb-avatar { width: 32px; height: 32px; background: var(--green); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { padding: 16px 24px; background: var(--white); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  .topbar-title { font-size: 18px; font-weight: 700; flex: 1; }
+  .topbar-stats { display: flex; gap: 12px; }
+  .stat-chip { background: var(--green-bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; text-align: center; }
+  .stat-chip .val { font-size: 18px; font-weight: 700; color: var(--green-dark); }
+  .stat-chip .lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .topbar-actions { display: flex; gap: 8px; }
+  .icon-btn { padding: 8px 14px; border: 2px solid var(--border); background: white; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
+  .icon-btn:hover { border-color: var(--green); color: var(--green); }
+  .icon-btn.primary { background: var(--green); border-color: var(--green); color: white; }
+  .icon-btn.primary:hover { background: var(--green-dark); border-color: var(--green-dark); }
+  .icon-btn svg { width: 14px; height: 14px; }
+
+  .content { flex: 1; display: flex; overflow: hidden; }
+
+  /* CALENDAR PANE */
+  .cal-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .cal-nav { padding: 12px 24px; display: flex; align-items: center; gap: 12px; background: var(--white); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .cal-nav-title { font-size: 15px; font-weight: 700; min-width: 140px; }
+  .cal-nav-btn { width: 30px; height: 30px; border: 1px solid var(--border); background: white; border-radius: 7px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.15s; }
+  .cal-nav-btn:hover { background: var(--green-bg); border-color: var(--green); }
+  .cal-spacer { flex: 1; }
+  .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .view-btn { padding: 6px 14px; border: none; background: none; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: all 0.15s; }
+  .view-btn.active { background: var(--green); color: white; }
+
+  /* WEEK VIEW */
+  .week-grid { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .week-header { display: grid; grid-template-columns: 52px repeat(7,1fr); background: var(--white); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .wh-cell { padding: 10px 8px; text-align: center; border-right: 1px solid var(--border); }
+  .wh-day { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .wh-date { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 2px; }
+  .wh-date.today { background: var(--green); color: white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; margin: 2px auto 0; font-size: 16px; }
+  .week-body { flex: 1; display: grid; grid-template-columns: 52px repeat(7,1fr); overflow-y: auto; position: relative; }
+  .time-col { display: flex; flex-direction: column; }
+  .time-slot { height: 60px; border-right: 1px solid var(--border); border-bottom: 1px solid rgba(221,229,192,0.4); padding: 0 6px; font-size: 10px; color: var(--text-muted); display: flex; align-items: flex-start; padding-top: 4px; flex-shrink: 0; }
+  .day-col { border-right: 1px solid var(--border); position: relative; min-height: 60px; }
+  .day-col-inner { position: relative; }
+  .hour-line { height: 60px; border-bottom: 1px solid rgba(221,229,192,0.4); }
+  .time-block { position: absolute; left: 3px; right: 3px; border-radius: 7px; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer; overflow: hidden; transition: all 0.15s; border: none; text-align: left; }
+  .time-block:hover { filter: brightness(0.93); transform: scale(1.01); }
+  .time-block.done { opacity: 0.5; text-decoration: line-through; }
+  .time-block .tb-title { font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .time-block .tb-time { font-size: 10px; opacity: 0.8; margin-top: 1px; }
+  .time-block .tb-check { position: absolute; top: 4px; right: 4px; width: 16px; height: 16px; border: 2px solid currentColor; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .time-block.done .tb-check { background: currentColor; }
+  .time-block.done .tb-check::after { content: '✓'; color: white; font-size: 9px; filter: invert(0); }
+
+  /* MONTH VIEW */
+  .month-grid { flex: 1; overflow-y: auto; padding: 16px 24px; }
+  .month-header-row { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 4px; }
+  .month-day-label { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; padding: 4px; }
+  .month-body { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+  .month-cell { min-height: 90px; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 6px; overflow: hidden; }
+  .month-cell.other-month { background: #f8f8f4; opacity: 0.6; }
+  .month-cell.today { border-color: var(--green); border-width: 2px; }
+  .month-date-num { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+  .month-date-num.today-num { color: var(--green); }
+  .month-event { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; font-weight: 600; }
+  .month-more { font-size: 10px; color: var(--text-muted); cursor: pointer; }
+  .month-more:hover { color: var(--green); }
+
+  /* RIGHT PANEL */
+  .right-panel { width: 300px; background: var(--white); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+  .rp-section { padding: 16px; border-bottom: 1px solid var(--border); }
+  .rp-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .rp-title span { font-size: 11px; font-weight: 600; color: var(--green); cursor: pointer; }
+  .assign-list { overflow-y: auto; flex: 1; padding: 0 16px 16px; }
+  .assign-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .assign-item:last-child { border-bottom: none; }
+  .assign-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .assign-info { flex: 1; min-width: 0; }
+  .assign-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .assign-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .assign-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(44,46,30,0.4); z-index: 500; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 28px; width: 420px; max-width: 90vw; box-shadow: 0 8px 40px rgba(44,46,30,0.2); }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.04em; }
+  .form-input { width: 100%; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.15s; background: white; color: var(--text); }
+  .form-input:focus { border-color: var(--green); }
+  .color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+  .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.15s; }
+  .color-swatch.selected { border-color: var(--text); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 24px; justify-content: flex-end; }
+  .btn-cancel { padding: 10px 20px; border: 2px solid var(--border); background: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text-muted); }
+  .btn-save { padding: 10px 20px; background: var(--green); border: none; color: white; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-delete { padding: 10px 20px; background: none; border: 2px solid #e8b4a4; color: var(--red); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+  /* REFRESH TOAST */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--sidebar); color: white; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; display: none; align-items: center; gap: 8px; z-index: 900; box-shadow: var(--shadow); }
+  .toast.show { display: flex; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* IMPORT BANNER */
+  .import-banner { background: linear-gradient(135deg, #7A8C4E 0%, #A8BA72 100%); color: white; padding: 10px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; }
+  .import-banner strong { font-weight: 700; }
+  .import-banner .ib-close { margin-left: auto; background: none; border: none; color: white; cursor: pointer; font-size: 16px; opacity: 0.8; }
+  .import-banner .ib-close:hover { opacity: 1; }
+
+  /* SPINNING */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; display: inline-block; }
+
+  /* MINI CALENDAR */
+  .mini-cal { padding: 16px; }
+  .mini-cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .mini-cal-title { font-size: 13px; font-weight: 700; }
+  .mini-cal-btn { width: 24px; height: 24px; border: none; background: none; cursor: pointer; color: var(--text-muted); border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .mini-cal-btn:hover { background: var(--green-bg); color: var(--green); }
+  .mini-cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+  .mini-cal-day { text-align: center; font-size: 10px; font-weight: 600; color: var(--text-muted); padding: 3px 0; }
+  .mini-cal-date { text-align: center; font-size: 11px; padding: 4px 2px; border-radius: 5px; cursor: pointer; color: var(--text); }
+  .mini-cal-date:hover { background: var(--green-bg); }
+  .mini-cal-date.today { background: var(--green); color: white; font-weight: 700; border-radius: 50%; }
+  .mini-cal-date.has-event { position: relative; }
+  .mini-cal-date.has-event::after { content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--green-light); border-radius: 50%; }
+  .mini-cal-date.other { color: var(--border); }
+
+  /* PROGRESS BAR */
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.3s ease; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ════════ ONBOARDING ════════ -->
+<div id="onboarding">
+  <div class="ob-card" id="ob-card">
+
+    <!-- STEP 0: Welcome -->
+    <div id="step-0">
+      <div class="ob-logo">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="8" cy="15" r="1.5" fill="white"/><circle cx="12" cy="15" r="1.5" fill="white"/><circle cx="16" cy="15" r="1.5" fill="white"/></svg>
+      </div>
+      <h1 class="ob-title">Canvas Schedule Extension</h1>
+      <p class="ob-sub">Transform your Canvas assignments into a personalised, time-blocked schedule.</p>
+      <ul class="ob-features">
+        <li>Automatic time-blocking for all assignments</li>
+        <li>Smart scheduling based on your study style</li>
+        <li>DRS accommodation reminders for exams</li>
+        <li>Adaptive scheduling that adjusts to changes</li>
+      </ul>
+      <button class="btn-primary" onclick="goStep(1)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Connect to Canvas
+      </button>
+      <div class="ob-dots" id="dots-0">
+        <div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+      </div>
+    </div>
+
+    <!-- STEP 1: Study Style -->
+    <div id="step-1" class="hidden">
+      <p class="ob-h">Set Your Preferences</p>
+      <p class="ob-p">Help us create the perfect schedule</p>
+
+      <div class="ob-section">
+        <div class="ob-section-title"><span class="ob-section-icon">📚</span>Study Style</div>
+        <div class="ob-option selected" data-group="style" data-val="focused" onclick="selectOb(this)">
+          <div class="ob-option-radio"></div>
+          <div class="ob-option-text"><strong>Focused Sessions</strong><span>Long, uninterrupted blocks — great for deep work</span></div>
+        </div>
+        <div class="ob-option" data-group="style" data-val="pomodoro" onclick="selectOb(this)">
+          <div class="ob-option-radio"></div>
+          <div class="ob-option-text"><strong>Pomodoro Method</strong><span>25 min work, 5 min break — proven and effective</span></div>
+        </div>
+        <div class="ob-option" data-group="style" data-val="flexible" onclick="selectOb(this)">
+          <div class="ob-option-radio"></div>
+          <div class="ob-option-text"><strong>Flexible</strong><span>I'll mix it up based on the task</span></div>
+        </div>
+      </div>
+
+      <div class="ob-section">
+        <div class="ob-section-title"><span class="ob-section-icon">📅</span>Schedule Spread</div>
+        <div class="ob-option selected" data-group="spread" data-val="weekdays" onclick="selectOb(this)">
+          <div class="ob-option-radio"></div>
+          <div class="ob-option-text"><strong>Weekdays only</strong><span>Keep weekends free</span></div>
+        </div>
+        <div class="ob-option" data-group="spread" data-val="all" onclick="selectOb(this)">
+          <div class="ob-option-radio"></div>
+          <div class="ob-option-text"><strong>All week</strong><span>Spread across all 7 days</span></div>
+        </div>
+        <div class="ob-option" data-group="spread" data-val="weekend-heavy" onclick="selectOb(this)">
+          <div class="ob-option-radio"></div>
+          <div class="ob-option-text"><strong>Weekend-heavy</strong><span>More study time on weekends</span></div>
+        </div>
+      </div>
+
+      <div class="ob-section">
+        <div class="ob-section-title"><span class="ob-section-icon">🕐</span>Preferred Study Times</div>
+        <div class="ob-time-grid">
+          <label class="ob-time-opt selected" onclick="toggleTime(this,'morning')">
+            <input type="checkbox" checked style="display:none"> 🌅 Morning (6AM–12PM)
+          </label>
+          <label class="ob-time-opt" onclick="toggleTime(this,'afternoon')">
+            <input type="checkbox" style="display:none"> ☀️ Afternoon (12PM–6PM)
+          </label>
+          <label class="ob-time-opt" onclick="toggleTime(this,'evening')">
+            <input type="checkbox" style="display:none"> 🌆 Evening (6PM–12AM)
+          </label>
+          <label class="ob-time-opt" onclick="toggleTime(this,'late')">
+            <input type="checkbox" style="display:none"> 🌙 Late Night (12AM–4AM)
+          </label>
+        </div>
+      </div>
+
+      <div class="ob-nav">
+        <button class="btn-back" onclick="goStep(0)">Back</button>
+        <button class="btn-primary" onclick="goStep(2)">Continue →</button>
+      </div>
+      <div class="ob-dots">
+        <div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2: DRS -->
+    <div id="step-2" class="hidden">
+      <p class="ob-h">DRS Accommodations</p>
+      <p class="ob-p">Set finals reminders so you're always prepared.</p>
+
+      <div class="ob-section">
+        <div class="ob-section-title"><span class="ob-section-icon">🔔</span>Reminder Schedule</div>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">We'll remind you at these intervals:</p>
+        <label class="drs-option"><input type="checkbox" checked id="drs-2w"> 2 weeks before exam</label>
+        <label class="drs-option"><input type="checkbox" checked id="drs-1w"> 1 week before exam</label>
+        <label class="drs-option"><input type="checkbox" checked id="drs-3d"> 3 days before (final)</label>
+        <label class="drs-option"><input type="checkbox" id="drs-1d"> Day before</label>
+      </div>
+
+      <div class="ob-section">
+        <div class="ob-section-title"><span class="ob-section-icon">⏱️</span>Extended Time</div>
+        <div class="ob-option selected" data-group="time" data-val="1.5x" onclick="selectOb(this)">
+          <div class="ob-option-radio"></div>
+          <div class="ob-option-text"><strong>1.5× time</strong><span>Block 50% more time for exams</span></div>
+        </div>
+        <div class="ob-option" data-group="time" data-val="2x" onclick="selectOb(this)">
+          <div class="ob-option-radio"></div>
+          <div class="ob-option-text"><strong>2× time</strong><span>Double-length exam blocks</span></div>
+        </div>
+        <div class="ob-option" data-group="time" data-val="none" onclick="selectOb(this)">
+          <div class="ob-option-radio"></div>
+          <div class="ob-option-text"><strong>No accommodation</strong><span>Standard time</span></div>
+        </div>
+      </div>
+
+      <div class="ob-nav">
+        <button class="btn-back" onclick="goStep(1)">Back</button>
+        <button class="btn-primary" onclick="goStep(3)">Continue →</button>
+      </div>
+      <div class="ob-dots">
+        <div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Generating -->
+    <div id="step-3" class="hidden">
+      <div class="ob-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      </div>
+      <h1 class="ob-title">Building Your Schedule</h1>
+      <p class="ob-sub">Importing from Canvas and time-blocking your quarter…</p>
+      <div style="margin: 20px 0;">
+        <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px;" id="gen-status">Connecting to Canvas…</div>
+        <div class="progress-bar"><div class="progress-fill" id="gen-progress" style="width:0%"></div></div>
+      </div>
+      <div class="ob-dots">
+        <div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════ APP ════════ -->
+<div id="app">
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sb-logo">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </div>
+      <button class="sb-btn active" title="Calendar" onclick="setSbActive(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </button>
+      <button class="sb-btn" title="Assignments" onclick="setSbActive(this); scrollToPanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </button>
+      <button class="sb-btn" title="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </button>
+      <button class="sb-btn" title="Settings" onclick="setSbActive(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
+      <div class="sb-spacer"></div>
+      <div class="sb-avatar" title="Profile">A</div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+      <!-- Import Banner -->
+      <div class="import-banner" id="import-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+        <strong>Canvas connected.</strong> Imported 12 assignments, 3 exams, and 4 quizzes for Spring 2026 (Apr–Jun).
+        <button class="ib-close" onclick="document.getElementById('import-banner').style.display='none'">✕</button>
+      </div>
+
+      <!-- TOP BAR -->
+      <div class="topbar">
+        <div class="topbar-title" id="topbar-title">Your Schedule</div>
+        <div class="topbar-stats">
+          <div class="stat-chip"><div class="val" id="stat-hours">12.5</div><div class="lbl">Total Hours</div></div>
+          <div class="stat-chip"><div class="val" id="stat-assign">6</div><div class="lbl">Assignments</div></div>
+          <div class="stat-chip"><div class="val" id="stat-done">1</div><div class="lbl">Completed</div></div>
+          <div class="stat-chip"><div class="val" id="stat-drs">1</div><div class="lbl">DRS Reminders</div></div>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" onclick="refreshCanvas()" id="refresh-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            Refresh Canvas
+          </button>
+          <button class="icon-btn primary" onclick="openAddModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Block
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTENT AREA -->
+      <div class="content">
+
+        <!-- CALENDAR PANE -->
+        <div class="cal-pane">
+          <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="navWeek(-1)">&#8249;</button>
+            <div class="cal-nav-title" id="cal-nav-title">May 12 – 18, 2026</div>
+            <button class="cal-nav-btn" onclick="navWeek(1)">&#8250;</button>
+            <button class="icon-btn" style="margin-left:8px; padding:6px 12px; font-size:12px;" onclick="goToday()">Today</button>
+            <div class="cal-spacer"></div>
+            <div class="view-toggle">
+              <button class="view-btn active" onclick="setView('week',this)">Week</button>
+              <button class="view-btn" onclick="setView('month',this)">Month</button>
+            </div>
+          </div>
+
+          <!-- WEEK VIEW -->
+          <div id="week-view" class="week-grid">
+            <div class="week-header" id="week-header"></div>
+            <div class="week-body" id="week-body"></div>
+          </div>
+
+          <!-- MONTH VIEW -->
+          <div id="month-view" class="hidden month-grid">
+            <div class="month-header-row" id="month-header-row"></div>
+            <div class="month-body" id="month-body"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="right-panel">
+          <!-- Mini Calendar -->
+          <div class="mini-cal">
+            <div class="mini-cal-header">
+              <button class="mini-cal-btn" onclick="miniNavMonth(-1)">&#8249;</button>
+              <div class="mini-cal-title" id="mini-cal-title"></div>
+              <button class="mini-cal-btn" onclick="miniNavMonth(1)">&#8250;</button>
+            </div>
+            <div class="mini-cal-grid" id="mini-cal-grid"></div>
+          </div>
+
+          <!-- Upcoming Assignments -->
+          <div class="rp-section" style="flex:0 0 auto;">
+            <div class="rp-title">Upcoming Assignments <span onclick="setView('month', document.querySelector('.view-btn:last-child'))">View all →</span></div>
+          </div>
+          <div class="assign-list" id="assign-list"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Edit Block</div>
+    <input type="hidden" id="modal-id">
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input class="form-input" id="modal-name" type="text" placeholder="Assignment name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Course</label>
+      <input class="form-input" id="modal-course" type="text" placeholder="e.g. BIO 101">
+    </div>
+    <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div>
+        <label class="form-label">Date</label>
+        <input class="form-input" id="modal-date" type="date">
+      </div>
+      <div>
+        <label class="form-label">Start Time</label>
+        <input class="form-input" id="modal-time" type="time">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Duration (minutes)</label>
+      <input class="form-input" id="modal-dur" type="number" min="15" step="15" value="60">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Type</label>
+      <select class="form-input" id="modal-type">
+        <option value="assignment">Assignment</option>
+        <option value="exam">Exam</option>
+        <option value="quiz">Quiz</option>
+        <option value="study">Study Session</option>
+        <option value="break">Break</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Color</label>
+      <div class="color-picker" id="color-picker"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-delete" id="modal-delete" onclick="deleteBlock()">Delete</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveBlock()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="spin">↻</span> <span id="toast-msg">Refreshing Canvas…</span>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
+const STATE = {
+  studyStyle: 'focused',
+  spread: 'weekdays',
+  times: ['morning'],
+  drsExtended: '1.5x',
+  currentWeekStart: null,  // Monday of displayed week
+  view: 'week',
+  miniMonth: null,
+  blocks: [],
+  nextId: 1,
+  editingId: null,
+};
+
+const COLORS = {
+  assignment: { bg: '#E8F0D4', text: '#556338', border: '#A8BA72' },
+  exam:       { bg: '#F5DDD4', text: '#8B3A22', border: '#C0664A' },
+  quiz:       { bg: '#D4E4F5', text: '#2A4F75', border: '#5A7A9E' },
+  study:      { bg: '#F5ECD4', text: '#7A5A22', border: '#C8A45A' },
+  break:      { bg: '#EED4F5', text: '#5A2A75', border: '#8E5AA8' },
+};
+
+const SWATCHES = ['#7A8C4E','#C0664A','#5A7A9E','#C8A45A','#8E5AA8','#4A8A7A','#C8874A','#2C2E1E'];
+
+const QUARTER_START = new Date(2026, 3, 1);  // April 1
+const QUARTER_END   = new Date(2026, 5, 30); // June 30
+
+// ════════════════════════════════════════════
+//  ONBOARDING
+// ════════════════════════════════════════════
+let curStep = 0;
+function goStep(n) {
+  document.getElementById('step-' + curStep).classList.add('hidden');
+  curStep = n;
+  document.getElementById('step-' + n).classList.remove('hidden');
+  if (n === 3) startGeneration();
+}
+function selectOb(el) {
+  const group = el.dataset.group;
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  if (group === 'style') STATE.studyStyle = el.dataset.val;
+  if (group === 'spread') STATE.spread = el.dataset.val;
+  if (group === 'time') STATE.drsExtended = el.dataset.val;
+}
+function toggleTime(el, key) {
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) { if (!STATE.times.includes(key)) STATE.times.push(key); }
+  else { STATE.times = STATE.times.filter(t => t !== key); }
+}
+function startGeneration() {
+  const msgs = ['Connecting to Canvas…','Fetching assignments…','Fetching exams & quizzes…','Applying schedule preferences…','Time-blocking your quarter…','Syncing with Google Calendar…','Done!'];
+  let i = 0;
+  const bar = document.getElementById('gen-progress');
+  const status = document.getElementById('gen-status');
+  const iv = setInterval(() => {
+    if (i >= msgs.length) { clearInterval(iv); launchApp(); return; }
+    status.textContent = msgs[i];
+    bar.style.width = ((i+1) / msgs.length * 100) + '%';
+    i++;
+  }, 480);
+}
+function launchApp() {
+  document.getElementById('onboarding').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+
+// ════════════════════════════════════════════
+//  SEED DATA
+// ════════════════════════════════════════════
+function seedBlocks() {
+  const assignments = [
+    { name: 'Physics Lab Report', course: 'PHYS 201', type: 'assignment', dueDate: new Date(2026,4,20), hours: 3 },
+    { name: 'History Essay', course: 'HIST 110', type: 'assignment', dueDate: new Date(2026,4,22), hours: 4 },
+    { name: 'Math Problem Set', course: 'MATH 230', type: 'assignment', dueDate: new Date(2026,4,19), hours: 2 },
+    { name: 'Biology Quiz', course: 'BIO 101', type: 'quiz', dueDate: new Date(2026,4,21), hours: 1 },
+    { name: 'Chemistry Midterm', course: 'CHEM 150', type: 'exam', dueDate: new Date(2026,4,28), hours: 5 },
+    { name: 'English Essay Draft', course: 'ENG 100', type: 'assignment', dueDate: new Date(2026,4,26), hours: 3 },
+    { name: 'CS Programming HW', course: 'CS 201', type: 'assignment', dueDate: new Date(2026,5,2), hours: 4 },
+    { name: 'Stats Quiz 3', course: 'STAT 200', type: 'quiz', dueDate: new Date(2026,5,5), hours: 1.5 },
+    { name: 'Physics Final', course: 'PHYS 201', type: 'exam', dueDate: new Date(2026,5,12), hours: 6 },
+    { name: 'History Term Paper', course: 'HIST 110', type: 'assignment', dueDate: new Date(2026,5,8), hours: 6 },
+    { name: 'Math Final Exam', course: 'MATH 230', type: 'exam', dueDate: new Date(2026,5,15), hours: 5 },
+    { name: 'Bio Lab Report', course: 'BIO 101', type: 'assignment', dueDate: new Date(2026,4,30), hours: 2.5 },
+  ];
+
+  const startTimes = {
+    morning:   [7, 8, 9, 10],
+    afternoon: [13, 14, 15, 16],
+    evening:   [18, 19, 20],
+    late:      [22, 23],
+  };
+
+  const availHours = STATE.times.length ? STATE.times : ['morning'];
+  const allSlots = availHours.flatMap(t => startTimes[t] || []);
+
+  let blockDate = new Date(QUARTER_START);
+  let slotIdx = 0;
+
+  assignments.forEach(a => {
+    // Create 1–3 study session blocks before due date
+    const sessions = a.hours <= 2 ? 1 : a.hours <= 4 ? 2 : 3;
+    const hoursEach = a.hours / sessions;
+    for (let s = 0; s < sessions; s++) {
+      let d = new Date(a.dueDate);
+      d.setDate(d.getDate() - (sessions - s) * 2 - 1);
+      if (d < QUARTER_START) d = new Date(QUARTER_START);
+
+      // Skip weekends if weekdays-only
+      while (STATE.spread === 'weekdays' && (d.getDay() === 0 || d.getDay() === 6)) {
+        d.setDate(d.getDate() + 1);
+      }
+
+      const hr = allSlots[slotIdx % allSlots.length];
+      slotIdx++;
+
+      const durMin = STATE.studyStyle === 'pomodoro'
+        ? Math.round(hoursEach * 60 / 30) * 30  // round to 30 min for pomodoro
+        : Math.round(hoursEach * 60);
+
+      STATE.blocks.push({
+        id: STATE.nextId++,
+        name: a.name,
+        course: a.course,
+        type: a.type,
+        date: fmtDate(d),
+        startHour: hr,
+        startMin: 0,
+        durMin: Math.max(30, durMin),
+        done: false,
+        color: null,
+      });
+
+      // Pomodoro: add break after
+      if (STATE.studyStyle === 'pomodoro' && s < sessions - 1) {
+        let bd = new Date(d);
+        STATE.blocks.push({
+          id: STATE.nextId++,
+          name: '☕ Break',
+          course: '',
+          type: 'break',
+          date: fmtDate(bd),
+          startHour: hr + Math.floor(durMin / 60),
+          startMin: durMin % 60,
+          durMin: 10,
+          done: false,
+          color: null,
+        });
+      }
+    }
+
+    // Exam day block
+    if (a.type === 'exam') {
+      STATE.blocks.push({
+        id: STATE.nextId++,
+        name: '📝 ' + a.name,
+        course: a.course,
+        type: 'exam',
+        date: fmtDate(a.dueDate),
+        startHour: 9,
+        startMin: 0,
+        durMin: 120,
+        done: false,
+        color: null,
+      });
+    }
+  });
+
+  // Mark one as done for demo
+  if (STATE.blocks.length > 0) STATE.blocks[0].done = true;
+}
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+function initApp() {
+  const today = new Date();
+  STATE.currentWeekStart = getMonday(today);
+  STATE.miniMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  seedBlocks();
+  renderAll();
+  updateStats();
+  renderAssignList();
+}
+
+function renderAll() {
+  updateTopbarTitle();
+  if (STATE.view === 'week') renderWeek();
+  else renderMonth();
+  renderMiniCal();
+}
+
+// ════════════════════════════════════════════
+//  WEEK VIEW
+// ════════════════════════════════════════════
+function renderWeek() {
+  const header = document.getElementById('week-header');
+  const body = document.getElementById('week-body');
+  const today = new Date();
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // Build 7 days starting from currentWeekStart (Monday)
+  const weekDays = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(STATE.currentWeekStart);
+    d.setDate(d.getDate() + i);
+    weekDays.push(d);
+  }
+
+  // Header
+  header.innerHTML = '<div class="wh-cell"></div>' + weekDays.map(d => {
+    const isToday = sameDay(d, today);
+    const dateNum = isToday
+      ? `<div class="wh-date today">${d.getDate()}</div>`
+      : `<div class="wh-date">${d.getDate()}</div>`;
+    return `<div class="wh-cell"><div class="wh-day">${days[d.getDay()]}</div>${dateNum}</div>`;
+  }).join('');
+
+  // Body: 6am – midnight = 18 hours
+  const START_HR = 6, END_HR = 24;
+  let html = '';
+
+  // Time column
+  html += '<div class="time-col">';
+  for (let h = START_HR; h < END_HR; h++) {
+    const label = h === 12 ? '12 PM' : h < 12 ? `${h} AM` : `${h-12} PM`;
+    html += `<div class="time-slot">${label}</div>`;
+  }
+  html += '</div>';
+
+  // Day columns
+  weekDays.forEach(d => {
+    const dateStr = fmtDate(d);
+    const dayBlocks = STATE.blocks.filter(b => b.date === dateStr);
+
+    html += `<div class="day-col"><div class="day-col-inner">`;
+    for (let h = START_HR; h < END_HR; h++) {
+      html += `<div class="hour-line"></div>`;
+    }
+
+    dayBlocks.forEach(b => {
+      if (b.startHour < START_HR || b.startHour >= END_HR) return;
+      const top = (b.startHour - START_HR + b.startMin / 60) * 60;
+      const height = Math.max(22, b.durMin);
+      const colors = COLORS[b.type] || COLORS.assignment;
+      const bg = b.color || colors.bg;
+      const col = colors.text;
+      const doneClass = b.done ? 'done' : '';
+      html += `<button class="time-block ${doneClass}"
+        style="top:${top}px; height:${height}px; background:${bg}; color:${col}; border-left: 3px solid ${colors.border};"
+        onclick="handleBlockClick(event,${b.id})"
+        title="${b.name} — ${b.course}">
+        <div class="tb-check">${b.done ? '✓' : ''}</div>
+        <div class="tb-title">${b.name}</div>
+        <div class="tb-time">${fmtTime(b.startHour, b.startMin)} · ${b.durMin}min</div>
+      </button>`;
+    });
+
+    html += '</div></div>';
+  });
+
+  body.innerHTML = html;
+
+  // Scroll to 8am
+  const scrollEl = document.getElementById('week-view');
+  scrollEl.scrollTop = (8 - START_HR) * 60;
+}
+
+// ════════════════════════════════════════════
+//  MONTH VIEW
+// ════════════════════════════════════════════
+function renderMonth() {
+  const hrow = document.getElementById('month-header-row');
+  const mbody = document.getElementById('month-body');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  hrow.innerHTML = days.map(d => `<div class="month-day-label">${d}</div>`).join('');
+
+  const today = new Date();
+  const yr = STATE.currentWeekStart.getFullYear();
+  const mo = STATE.currentWeekStart.getMonth();
+  const firstDay = new Date(yr, mo, 1);
+  const lastDay = new Date(yr, mo + 1, 0);
+
+  let cells = '';
+  // Padding before
+  for (let i = 0; i < firstDay.getDay(); i++) {
+    cells += '<div class="month-cell other-month"></div>';
+  }
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const d = new Date(yr, mo, day);
+    const ds = fmtDate(d);
+    const isToday = sameDay(d, today);
+    const dayBlocks = STATE.blocks.filter(b => b.date === ds);
+    const maxShow = 3;
+    const events = dayBlocks.slice(0, maxShow).map(b => {
+      const colors = COLORS[b.type] || COLORS.assignment;
+      const bg = b.color || colors.bg;
+      return `<div class="month-event" style="background:${bg}; color:${colors.text}" onclick="handleBlockClick(event,${b.id})">${b.name}</div>`;
+    }).join('');
+    const more = dayBlocks.length > maxShow ? `<div class="month-more">+${dayBlocks.length - maxShow} more</div>` : '';
+    cells += `<div class="month-cell ${isToday ? 'today' : ''}">
+      <div class="month-date-num ${isToday ? 'today-num' : ''}">${day}</div>
+      ${events}${more}
+    </div>`;
+  }
+  // Padding after
+  const remaining = 7 - ((firstDay.getDay() + lastDay.getDate()) % 7);
+  if (remaining < 7) for (let i = 0; i < remaining; i++) cells += '<div class="month-cell other-month"></div>';
+
+  mbody.innerHTML = cells;
+}
+
+// ════════════════════════════════════════════
+//  MINI CALENDAR
+// ════════════════════════════════════════════
+function renderMiniCal() {
+  const m = STATE.miniMonth;
+  const title = document.getElementById('mini-cal-title');
+  title.textContent = m.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  const today = new Date();
+  const firstDay = new Date(m.getFullYear(), m.getMonth(), 1);
+  const lastDay = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+  const days = ['S','M','T','W','T','F','S'];
+
+  let html = days.map(d => `<div class="mini-cal-day">${d}</div>`).join('');
+  for (let i = 0; i < firstDay.getDay(); i++) html += '<div></div>';
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const d = new Date(m.getFullYear(), m.getMonth(), day);
+    const ds = fmtDate(d);
+    const isToday = sameDay(d, today);
+    const hasEvent = STATE.blocks.some(b => b.date === ds);
+    html += `<div class="mini-cal-date ${isToday?'today':''} ${hasEvent?'has-event':''}" onclick="jumpToDate('${ds}')">${day}</div>`;
+  }
+
+  document.getElementById('mini-cal-grid').innerHTML = html;
+}
+
+function miniNavMonth(dir) {
+  STATE.miniMonth = new Date(STATE.miniMonth.getFullYear(), STATE.miniMonth.getMonth() + dir, 1);
+  renderMiniCal();
+}
+
+function jumpToDate(ds) {
+  const d = new Date(ds + 'T00:00:00');
+  STATE.currentWeekStart = getMonday(d);
+  if (STATE.view === 'month') {
+    STATE.currentWeekStart = new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+  renderAll();
+}
+
+// ════════════════════════════════════════════
+//  ASSIGN LIST
+// ════════════════════════════════════════════
+function renderAssignList() {
+  const today = new Date();
+  const upcoming = STATE.blocks
+    .filter(b => !b.done && new Date(b.date + 'T00:00:00') >= today)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 12);
+
+  const icons = { assignment: '📝', exam: '📋', quiz: '❓', study: '📖', break: '☕' };
+  const list = document.getElementById('assign-list');
+  list.innerHTML = upcoming.map(b => {
+    const colors = COLORS[b.type] || COLORS.assignment;
+    const d = new Date(b.date + 'T00:00:00');
+    const daysLeft = Math.ceil((d - today) / 86400000);
+    const dl = daysLeft <= 1 ? 'Due today!' : daysLeft <= 3 ? `${daysLeft}d left` : d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const urgency = daysLeft <= 3 ? 'color:var(--red);font-weight:700;' : '';
+    return `<div class="assign-item">
+      <div class="assign-icon" style="background:${colors.bg}">${icons[b.type]||'📝'}</div>
+      <div class="assign-info">
+        <div class="assign-name">${b.name}</div>
+        <div class="assign-meta">${b.course} · ${fmtTime(b.startHour, b.startMin)}</div>
+      </div>
+      <div>
+        <div class="assign-badge" style="background:${colors.bg}; color:${colors.text}; ${urgency}">${dl}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--text-muted);font-size:13px;padding:12px 0;text-align:center;">All caught up! 🎉</div>';
+}
+
+// ════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════
+function navWeek(dir) {
+  if (STATE.view === 'week') {
+    STATE.currentWeekStart = new Date(STATE.currentWeekStart);
+    STATE.currentWeekStart.setDate(STATE.currentWeekStart.getDate() + dir * 7);
+  } else {
+    STATE.currentWeekStart = new Date(STATE.currentWeekStart.getFullYear(), STATE.currentWeekStart.getMonth() + dir, 1);
+  }
+  renderAll();
+}
+
+function goToday() {
+  const today = new Date();
+  STATE.currentWeekStart = STATE.view === 'week' ? getMonday(today) : new Date(today.getFullYear(), today.getMonth(), 1);
+  STATE.miniMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  renderAll();
+}
+
+function setView(v, btn) {
+  STATE.view = v;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('week-view').classList.toggle('hidden', v !== 'week');
+  document.getElementById('month-view').classList.toggle('hidden', v !== 'month');
+  if (v === 'month') {
+    const ws = STATE.currentWeekStart;
+    STATE.currentWeekStart = new Date(ws.getFullYear(), ws.getMonth(), 1);
+  }
+  renderAll();
+}
+
+function updateTopbarTitle() {
+  const ws = STATE.currentWeekStart;
+  if (STATE.view === 'week') {
+    const we = new Date(ws); we.setDate(we.getDate() + 6);
+    document.getElementById('cal-nav-title').textContent =
+      `${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${we.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+  } else {
+    document.getElementById('cal-nav-title').textContent =
+      ws.toLocaleString('default',{month:'long',year:'numeric'});
+  }
+}
+
+// ════════════════════════════════════════════
+//  BLOCK INTERACTIONS
+// ════════════════════════════════════════════
+function handleBlockClick(e, id) {
+  e.stopPropagation();
+  // Single click on check area: toggle done
+  const target = e.target;
+  if (target.classList.contains('tb-check') || target.closest('.tb-check')) {
+    toggleDone(id);
+  } else {
+    openEditModal(id);
+  }
+}
+
+function toggleDone(id) {
+  const b = STATE.blocks.find(b => b.id === id);
+  if (!b) return;
+  b.done = !b.done;
+  if (b.done) shootConfetti();
+  updateStats();
+  renderAll();
+  renderAssignList();
+}
+
+function shootConfetti() {
+  confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#7A8C4E','#A8BA72','#C9B96C','#556338','#F2F5E8'] });
+  setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.4 }, angle: 60, colors: ['#7A8C4E','#C0664A','#5A7A9E'] }), 200);
+  setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.4 }, angle: 120, colors: ['#A8BA72','#C9B96C','#8E5AA8'] }), 400);
+}
+
+function updateStats() {
+  const today = new Date();
+  const weekStart = getMonday(today);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 7);
+  const weekBlocks = STATE.blocks.filter(b => {
+    const d = new Date(b.date + 'T00:00:00');
+    return d >= weekStart && d < weekEnd;
+  });
+  const totalHours = weekBlocks.reduce((s, b) => s + b.durMin / 60, 0);
+  document.getElementById('stat-hours').textContent = totalHours.toFixed(1);
+  document.getElementById('stat-assign').textContent = STATE.blocks.filter(b => b.type === 'assignment' && !b.done).length;
+  document.getElementById('stat-done').textContent = STATE.blocks.filter(b => b.done).length;
+  document.getElementById('stat-drs').textContent = STATE.blocks.filter(b => b.type === 'exam').length;
+}
+
+// ════════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════════
+const swatchColors = SWATCHES;
+
+function initColorPicker() {
+  const cp = document.getElementById('color-picker');
+  cp.innerHTML = swatchColors.map(c =>
+    `<div class="color-swatch" style="background:${c}" data-color="${c}" onclick="selectSwatch(this)"></div>`
+  ).join('');
+}
+
+function selectSwatch(el) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function openAddModal() {
+  STATE.editingId = null;
+  document.getElementById('modal-title').textContent = 'Add Block';
+  document.getElementById('modal-delete').style.display = 'none';
+  document.getElementById('modal-id').value = '';
+  document.getElementById('modal-name').value = '';
+  document.getElementById('modal-course').value = '';
+  document.getElementById('modal-date').value = fmtDate(new Date());
+  document.getElementById('modal-time').value = '09:00';
+  document.getElementById('modal-dur').value = '60';
+  document.getElementById('modal-type').value = 'assignment';
+  initColorPicker();
+  document.getElementById('modal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const b = STATE.blocks.find(b => b.id === id);
+  if (!b) return;
+  STATE.editingId = id;
+  document.getElementById('modal-title').textContent = 'Edit Block';
+  document.getElementById('modal-delete').style.display = '';
+  document.getElementById('modal-id').value = id;
+  document.getElementById('modal-name').value = b.name;
+  document.getElementById('modal-course').value = b.course;
+  document.getElementById('modal-date').value = b.date;
+  document.getElementById('modal-time').value = `${String(b.startHour).padStart(2,'0')}:${String(b.startMin).padStart(2,'0')}`;
+  document.getElementById('modal-dur').value = b.durMin;
+  document.getElementById('modal-type').value = b.type;
+  initColorPicker();
+  if (b.color) {
+    const sw = document.querySelector(`.color-swatch[data-color="${b.color}"]`);
+    if (sw) sw.classList.add('selected');
+  }
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  STATE.editingId = null;
+}
+
+function saveBlock() {
+  const name = document.getElementById('modal-name').value.trim();
+  if (!name) { document.getElementById('modal-name').focus(); return; }
+  const dateVal = document.getElementById('modal-date').value;
+  const timeVal = document.getElementById('modal-time').value;
+  const [hr, mn] = timeVal.split(':').map(Number);
+  const dur = parseInt(document.getElementById('modal-dur').value) || 60;
+  const type = document.getElementById('modal-type').value;
+  const selected = document.querySelector('.color-swatch.selected');
+  const color = selected ? selected.dataset.color : null;
+
+  if (STATE.editingId !== null) {
+    const b = STATE.blocks.find(b => b.id === STATE.editingId);
+    if (b) { b.name = name; b.course = document.getElementById('modal-course').value; b.date = dateVal; b.startHour = hr; b.startMin = mn; b.durMin = dur; b.type = type; b.color = color; }
+  } else {
+    STATE.blocks.push({ id: STATE.nextId++, name, course: document.getElementById('modal-course').value, type, date: dateVal, startHour: hr, startMin: mn, durMin: dur, done: false, color });
+  }
+  closeModal();
+  renderAll();
+  updateStats();
+  renderAssignList();
+}
+
+function deleteBlock() {
+  if (STATE.editingId === null) return;
+  STATE.blocks = STATE.blocks.filter(b => b.id !== STATE.editingId);
+  closeModal();
+  renderAll();
+  updateStats();
+  renderAssignList();
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ════════════════════════════════════════════
+//  REFRESH
+// ════════════════════════════════════════════
+function refreshCanvas() {
+  const btn = document.getElementById('refresh-btn');
+  const svg = btn.querySelector('svg');
+  svg.style.animation = 'spin 1s linear infinite';
+  showToast('Checking Canvas for new assignments…');
+
+  setTimeout(() => {
+    svg.style.animation = '';
+    // Add a fake new assignment
+    const newAssign = {
+      id: STATE.nextId++, name: 'New: Sociology Reading', course: 'SOC 101',
+      type: 'assignment', date: fmtDate(addDays(new Date(), 5)),
+      startHour: 10, startMin: 0, durMin: 90, done: false, color: null
+    };
+    STATE.blocks.push(newAssign);
+    renderAll(); updateStats(); renderAssignList();
+    showToast('✓ 1 new assignment added from Canvas!', 3000);
+  }, 2200);
+}
+
+function showToast(msg, dur = 0) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  if (dur) setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════
+function getMonday(d) {
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const m = new Date(d);
+  m.setDate(m.getDate() + diff);
+  m.setHours(0,0,0,0);
+  return m;
+}
+function sameDay(a, b) { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+function fmtDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function fmtTime(h, m) { const ampm = h < 12 ? 'AM' : 'PM'; const h12 = h % 12 || 12; return `${h12}:${String(m).padStart(2,'0')} ${ampm}`; }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function setSbActive(el) { document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
+function scrollToPanel() { document.querySelector('.right-panel').scrollIntoView({ behavior: 'smooth' }); }
+</script>
+</body>
+</html>
